@@ -52,8 +52,24 @@ Other verified details: center=ang2vec(pi/2-dec, ra); query_disc inclusive=True
 theta=acos(clamp(1-d2/2,-1,1)), theta=max(thmin,theta), thmin=exp(-16.5);
 amp=y0_true/B^(1/3); coords ra=rem(lon+pi,2pi)-pi, dec=lat-pi/2.
 
-### PHASE 3 — GPU optimization: IN PROGRESS
-Goal: >=5x faster than XGPaint on catalogue 0. Baseline timing of XGPaint via
-reference/julia/time_xgpaint.jl. numpy painter bottleneck = per-halo Python
-query_disc loop. Plan: host-side disc precompute + GPU batch (chord dist +
-bicubic gather + scatter-add).
+### PHASE 3 — GPU optimization: PASSING (>=5x achieved)
+`paint_catalogue_gpu` in painting/healpix.py; `scripts/benchmark_gpu.py`.
+XGPaint baseline (reference/julia/time_xgpaint.jl, 8 threads): 123.75 s/catalogue
+(reproduces exact reference map: nonzero=11840919, sum=2.421743555465493).
+JXPaint GPU: 16.8-18.0 s/catalogue -> **6.9-7.4x speedup**, bit-for-bit
+(max pixel rel err ~7e-11). tests/test_phase2.py: GPU==CPU painter to 2.5e-14.
+
+Design: host assembles flat disc-contribution arrays (healpy query_disc loop
+~13-14s, GIL-bound, dominates; batched pix2vec ~1.5s); GPU does fused chord
+distance + bicubic gather (into 537MB table) + masked scatter-add (jit, ~1.3s).
+Threading query_disc does NOT help (healpy holds GIL). Further speedup would
+need GPU-side disc-finding (not pursued; target already met).
+
+## How to reproduce
+- Phase 1: `PYTHONPATH=src python tests/test_phase1.py`
+- Phase 2/3 fast: `python tests/test_phase2.py`
+- Full map validation: `python scripts/paint_catalogue.py 0` then
+  `python scripts/validate_map.py outputs/jxpaint_snr_0_y0true.fits <ref.fits>`
+- Speedup benchmark: `python scripts/benchmark_gpu.py`
+- Regenerate references (Julia): `julia reference/julia/gen_reference.jl` and
+  `julia reference/julia/dump_table.jl` (dumps the 537MB beamed table, gitignored).

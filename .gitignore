@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+outputs/
+reference/data/*.f64
+reference/data/*.fits
+*.fits
+.ipynb_checkpoints/

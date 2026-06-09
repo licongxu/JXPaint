@@ -1,0 +1,10 @@
+Model built. cosmo = Cosmology.FlatLCDM{Float64}(0.6766, 0.6903327077465832, 0.30957590896528514, 9.138328813159374e-5)
+Omega_m = 0.30957590896528514  Omega_L = 0.6903327077465832  Omega_r = 9.138328813159374e-5  h = 0.6766
+M_sun = 1.98847e30 kg  P_e_factor = 8.125531675591423e-16 s^2 kg^-1
+wrote cosmo_geometry.csv
+get_params: P0=8.13 xc=0.8650519031141869 alpha=1.062 beta=-5.4807 gamma=-0.3292
+wrote shape_1d.csv
+wrote scalars.csv
+wrote y0_arnaud.csv
+wrote shape2d_beamed.csv
+ALL REFERENCE FILES WRITTEN to /scratch/scratch-lxu/jxpaint/reference/data

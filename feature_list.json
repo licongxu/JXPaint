@@ -1,0 +1,52 @@
+{
+  "features": [
+    {
+      "id": "phase1_cosmology",
+      "title": "FlatLCDM cosmology matching XGPaint/Cosmology.jl",
+      "state": "passing",
+      "evidence": "tests/test_phase1.py::test_cosmology_geometry max rel err <=7e-12 vs XGPaint"
+    },
+    {
+      "id": "phase1_gnfw_shape",
+      "title": "gNFW shape + LOS integral F(x)",
+      "state": "passing",
+      "evidence": "test_shape_1d 1.4e-14 vs XGPaint los_quadrature"
+    },
+    {
+      "id": "phase1_y_los",
+      "title": "Full Arnaud Compton-y y_los",
+      "state": "passing",
+      "evidence": "test_y_los_central 4.9e-9 vs XGPaint compton_y"
+    },
+    {
+      "id": "phase1_parametric",
+      "title": "y0_param / y0_arnaud = hmfast ParametricGNFW",
+      "state": "passing",
+      "evidence": "test_hmfast_equivalence 0.0 / 6.8e-11 vs hmfast"
+    },
+    {
+      "id": "phase1_shape_table",
+      "title": "Bicubic beamed 2D shape table",
+      "state": "passing",
+      "evidence": "test_shape2d_beamed 6.6e-16 vs cached itp2d"
+    },
+    {
+      "id": "phase2_painting",
+      "title": "Healpix disc painting matching Julia painter",
+      "state": "pending",
+      "evidence": ""
+    },
+    {
+      "id": "phase2_validation",
+      "title": "Map validation vs map_bench_snr_{0,1,2}_y0true.fits",
+      "state": "pending",
+      "evidence": ""
+    },
+    {
+      "id": "phase3_gpu_speed",
+      "title": ">=5x speedup vs XGPaint, GPU-optimized",
+      "state": "pending",
+      "evidence": ""
+    }
+  ]
+}

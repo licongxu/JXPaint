@@ -1,0 +1,10 @@
+typeof(itp2d) = Interpolations.FilledExtrapolation{Float64, 2, Interpolations.ScaledInterpolation{Float64, 2, Interpolations.BSplineInterpolation{Float64, 2, OffsetArrays.OffsetMatrix{Float64, Matrix{Float64}}, Interpolations.BSpline{Interpolations.Cubic{Interpolations.Line{Interpolations.OnGrid}}}, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}, Interpolations.BSpline{Interpolations.Cubic{Interpolations.Line{Interpolations.OnGrid}}}, Tuple{LinRange{Float64, Int64}, LinRange{Float64, Int64}}}, Interpolations.BSpline{Interpolations.Cubic{Interpolations.Line{Interpolations.OnGrid}}}, Float64}
+typeof(scaled) = Interpolations.ScaledInterpolation{Float64, 2, Interpolations.BSplineInterpolation{Float64, 2, OffsetArrays.OffsetMatrix{Float64, Matrix{Float64}}, Interpolations.BSpline{Interpolations.Cubic{Interpolations.Line{Interpolations.OnGrid}}}, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}, Interpolations.BSpline{Interpolations.Cubic{Interpolations.Line{Interpolations.OnGrid}}}, Tuple{LinRange{Float64, Int64}, LinRange{Float64, Int64}}}
+size(coefs) = (8194, 8194)
+logtheta:  -16.5 .. 2.5  N=8192
+logtheta500: -9.7 .. 3.0  N=8192
+filled extrapolation value = 0.0
+itp2d(-5.0,-6.0) = 0.02087413283376531
+coefs axes = (OffsetArrays.IdOffsetRange(values=0:8193, indices=0:8193), OffsetArrays.IdOffsetRange(values=0:8193, indices=0:8193))
+size(parent) = (8194, 8194)  typeof = Matrix{Float64}
+DUMPED beamed_table_coefs.f64 (8194x8194) and axes.txt

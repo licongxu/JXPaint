@@ -1,0 +1,45 @@
+# ===== Cosmology check =====
+h              = 0.676600
+Omega_b        = 0.04897468
+Omega_cdm      = 0.26060123
+Omega0_m (tot) = 0.31098309342355
+H0             = 67.6600
+
+# ===== hmfast reference: ParametricGNFWPressureProfile internals =====
+# y0_orig = 2 (sigma_T/m_e c^2) P0 P500c_arnaud r500c_cm shape_integral
+# y0_param = 10^A_SZ (m500c h/B / (0.7*3e14))^alpha_SZ E^2 (h/0.7)^-0.5
+# r500c WITHOUT bias (i.e. mass_def_500c.r_delta of M500c), physical Mpc
+
+ M500c[Msun]     z         E(z)   r500c[Mpc]       y0_param        y0_orig        ratio
+---------------------------------------------------------------------------------------
+   1.000e+14  0.16   1.08373403   0.68398565   4.007468e-06   1.322918e-05     0.302926
+   1.000e+14  0.50   1.31880106   0.60008017   5.934487e-06   1.959053e-05     0.302926
+   1.000e+14  1.00   1.78271437   0.49084114   1.084397e-05   3.579736e-05     0.302926
+   5.000e+14  0.16   1.08373403   1.16959901   1.421509e-05   8.023786e-05     0.177162
+   5.000e+14  0.50   1.31880106   1.02612265   2.105052e-05   1.188208e-04     0.177162
+   5.000e+14  1.00   1.78271437   0.83932654   3.846519e-05   2.171188e-04     0.177162
+   1.000e+15  0.16   1.08373403   1.47360242   2.452280e-05   1.743946e-04     0.140617
+   1.000e+15  0.50   1.31880106   1.29283353   3.631476e-05   2.582534e-04     0.140617
+   1.000e+15  1.00   1.78271437   1.05748518   6.635721e-05   4.719011e-04     0.140617
+
+# ===== Cross-check vs XGPaint =====
+z=0.5: hmfast E(z)=1.3188010594  XGPaint E(z)=1.2770800279  rel diff=+3.267e-02
+z=1.0: hmfast E(z)=1.7827143713  XGPaint E(z)=1.7800005933  rel diff=+1.525e-03
+r500c(M500c=1e15, z=0.5, no bias) = 1.292834 Mpc  (XGPaint expects ~1.4 Mpc)
+
+# ===== Consistency diagnostic for the XGPaint E(z) targets =====
+# Requested Omega_m (= Omega_b + Omega_cdm, NO neutrinos) = 0.30957590896529
+# hmfast Omega0_m (INCLUDES m_ncdm=0.06 eV) = 0.31098309342355
+#
+# Analytic flat-LCDM E(z) = sqrt(Om(1+z)^3 + (1-Om)), no radiation:
+#   z=0.5: E(z)=1.3172861435
+#   z=1.0: E(z)=1.7796155098
+#
+# Omega_m implied by each XGPaint E(z) (flat-LCDM, no radiation):
+#   z=0.5: XGPaint E=1.2770800279 -> implied Omega_m=0.265656
+#   z=1.0: XGPaint E=1.7800005933 -> implied Omega_m=0.309772
+#
+# CONCLUSION: hmfast and XGPaint share the SAME Omega_m~0.3096 flat-LCDM.
+# The z=1.0 XGPaint E(z) matches hmfast (and the analytic value) to ~0.02%.
+# The z=0.5 XGPaint E(z)=1.27708 implies Omega_m~0.266 and is INTERNALLY
+# INCONSISTENT with its own z=1.0 value; it is an erroneous reference.

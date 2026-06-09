@@ -33,14 +33,14 @@
     {
       "id": "phase2_painting",
       "title": "Healpix disc painting matching Julia painter",
-      "state": "pending",
-      "evidence": ""
+      "state": "passing",
+      "evidence": "numpy/healpy painter reproduces XGPaint geometry; key fix: theta_max uses unbiased Delta=200 radius"
     },
     {
       "id": "phase2_validation",
       "title": "Map validation vs map_bench_snr_{0,1,2}_y0true.fits",
-      "state": "pending",
-      "evidence": ""
+      "state": "passing",
+      "evidence": "i=0,1,2 all PASS: max pixel rel err ~7e-11, RMS ~1.5e-12, flux ~6e-15 (tols 1e-5/1e-6/1e-5)"
     },
     {
       "id": "phase3_gpu_speed",

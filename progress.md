@@ -34,15 +34,26 @@ Key facts learned:
 - The PRODUCTION cached shape table uses **Cubic** BSpline (Line OnGrid), coefs 8194x8194 (prefiltered+padded), NOT Linear. Bicubic eval reproduces it to machine precision.
 - hmfast cosmology differs slightly (0.06 eV neutrinos + emulator), so hmfast comparison done at formula level (feed hmfast's E,r500c).
 
-### PHASE 2 — Healpix painting: IN PROGRESS
-Next: implement painting/geometry.py (catalogue coords, ang2vec, disc query,
-chord-distance theta) and painting/healpix.py; paint catalogue_bench_snr_0 and
-validate vs map_bench_snr_{0,1,2}_y0true.fits (max pixel rel err <1e-5, RMS
-<1e-6, flux <1e-5). Painting recipe verified from XGPaint profiles.jl:
-center=ang2vec(pi/2-dec, ra); query_disc non-inclusive radius
-theta_max=min(max(2*FWHM*pi/10800, 4*theta500),5deg); per pixel
-d2=||v_pix-v_halo||^2, theta=acos(clamp(1-d2/2,-1,1)), theta=max(thmin,theta);
-if theta<thmax: map[pix]+= (y0_true/B^(1/3)) * yt(log theta, log theta500).
-thmin=exp(-16.5). coords ra=rem(lon+pi,2pi)-pi, dec=lat-pi/2.
+### PHASE 2 — Healpix painting: PASSING (bit-for-bit vs XGPaint maps)
+`scripts/paint_catalogue.py <i>` paints; `scripts/validate_map.py` checks.
+Validated i=0,1,2 vs map_bench_snr_{i}_y0true.fits:
+- max pixel rel err ~7e-11 (tol 1e-5), RMS rel err ~1.5e-12 (tol 1e-6),
+  flux rel err ~6e-15 (tol 1e-5). ALL PASS.
+Painter: numpy/healpy, painting/{geometry,healpix}.py. ~118 s/catalogue on CPU.
 
-### PHASE 3 — GPU optimization: NOT STARTED
+CRITICAL fix that achieved the match: theta_max (disc cutoff) must use the
+UNBIASED Delta=200 radius, NOT Delta=500/B^(1/3). The painter's compute_theta_max
+calls R_Δ(base, M*M_sun, z) with XGPaint default Δ=200 and no bias — feeding the
+M500c mass into the 200c radius formula. The shape lookup still uses theta500
+(Δ=500, /B^(1/3)). Getting theta_max wrong under-painted massive-halo wings
+(0.8% flux deficit, 134k missing pixels).
+Other verified details: center=ang2vec(pi/2-dec, ra); query_disc inclusive=True
+(superset) then strict theta<theta_max; d2=||v_pix-v_halo||^2,
+theta=acos(clamp(1-d2/2,-1,1)), theta=max(thmin,theta), thmin=exp(-16.5);
+amp=y0_true/B^(1/3); coords ra=rem(lon+pi,2pi)-pi, dec=lat-pi/2.
+
+### PHASE 3 — GPU optimization: IN PROGRESS
+Goal: >=5x faster than XGPaint on catalogue 0. Baseline timing of XGPaint via
+reference/julia/time_xgpaint.jl. numpy painter bottleneck = per-halo Python
+query_disc loop. Plan: host-side disc precompute + GPU batch (chord dist +
+bicubic gather + scatter-add).

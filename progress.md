@@ -52,18 +52,24 @@ Other verified details: center=ang2vec(pi/2-dec, ra); query_disc inclusive=True
 theta=acos(clamp(1-d2/2,-1,1)), theta=max(thmin,theta), thmin=exp(-16.5);
 amp=y0_true/B^(1/3); coords ra=rem(lon+pi,2pi)-pi, dec=lat-pi/2.
 
-### PHASE 3 — GPU optimization: PASSING (>=5x achieved)
+### PHASE 3 — GPU optimization: PASSING (~19x faster than XGPaint)
 `paint_catalogue_gpu` in painting/healpix.py; `scripts/benchmark_gpu.py`.
-XGPaint baseline (reference/julia/time_xgpaint.jl, 8 threads): 123.75 s/catalogue
-(reproduces exact reference map: nonzero=11840919, sum=2.421743555465493).
-JXPaint GPU: 16.8-18.0 s/catalogue -> **6.9-7.4x speedup**, bit-for-bit
+**XGPaint ground-truth baseline:** the actual production painter
+paint_a10_y0true_2d_mpi.jl self-reports **"painted in 108.07 seconds"** for
+catalogue 0 (run standalone, 8 threads; its output map == stored reference
+exactly, diff 0.0). (A faithful Julia re-implementation, reference/julia/
+time_xgpaint.jl, timed 123.75 s.)
+JXPaint GPU: **5.4-5.7 s/catalogue -> 19.0-19.8x speedup**, bit-for-bit
 (max pixel rel err ~7e-11). tests/test_phase2.py: GPU==CPU painter to 2.5e-14.
 
-Design: host assembles flat disc-contribution arrays (healpy query_disc loop
-~13-14s, GIL-bound, dominates; batched pix2vec ~1.5s); GPU does fused chord
-distance + bicubic gather (into 537MB table) + masked scatter-add (jit, ~1.3s).
-Threading query_disc does NOT help (healpy holds GIL). Further speedup would
-need GPU-side disc-finding (not pursued; target already met).
+Design: geometry computed in NUMPY (geometry._NpCosmo, CUDA-free) so the host
+path can fork before any GPU use. Disc-finding parallelised across fork workers
+(healpy query_disc is GIL-bound, so threads are useless but PROCESSES scale:
+14s -> 2.1s on 16 procs). Then GPU does fused chord distance + bicubic gather
+(into 537MB table, uploaded once via shape_table.coefs_device) + masked
+scatter-add (jit). Per-catalogue split: disc ~2.1s, pix2vec ~1.3s, gpu ~1.3s.
+Table coefs kept as numpy in BeamedShapeTable (lazy device copy) so loading
+the table does not init CUDA (prerequisite for the pre-GPU fork).
 
 ## How to reproduce
 - Phase 1: `PYTHONPATH=src python tests/test_phase1.py`

@@ -46,7 +46,7 @@
       "id": "phase3_gpu_speed",
       "title": ">=5x speedup vs XGPaint, GPU-optimized",
       "state": "passing",
-      "evidence": "GPU painter 16.8-18.0 s/catalogue vs XGPaint 123.75 s -> 6.9-7.4x; maps bit-for-bit (max rel err ~7e-11). scripts/benchmark_gpu.py"
+      "evidence": "GPU painter 5.4-5.7 s/catalogue vs production XGPaint 108.07 s (self-reported) -> 19.0-19.8x; maps bit-for-bit (max rel err ~7e-11). Parallel fork disc-finding + fused GPU kernel. scripts/benchmark_gpu.py"
     }
   ]
 }

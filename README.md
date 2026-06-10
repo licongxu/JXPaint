@@ -3,7 +3,7 @@
 GPU tSZ Compton-y map painting in Python + JAX, ported from
 [XGPaint](https://github.com/WebSky-mocks/XGPaint) (Julia). Paints beam-convolved
 Compton-y Healpix maps from halo catalogues, **bit-for-bit correct** vs XGPaint
-reference maps and **6.9–7.4× faster**.
+reference maps and **~19× faster** (5.4–5.7 s vs the production painter's 108 s/catalogue).
 
 ## Status (all phases passing)
 
@@ -11,7 +11,7 @@ reference maps and **6.9–7.4× faster**.
 |-------|------|--------------|
 | 1 | CustomGNFW pressure profile (= hmfast ParametricGNFW; XGPaint Arnaud10 shape) | cosmology ≤7e-12, shape F(x) 1.4e-14, y_los 4.9e-9 vs XGPaint; y0_param/y0_arnaud 0/6.8e-11 vs hmfast; bicubic beamed table 6.6e-16 vs cached .jld2 |
 | 2 | Healpix disc painting | maps i=0,1,2 vs `map_bench_snr_{i}_y0true.fits`: max pixel rel err ~7e-11, RMS ~1.5e-12, flux ~6e-15 |
-| 3 | GPU acceleration | 16.8–18.0 s/catalogue vs XGPaint 123.75 s → 6.9–7.4× |
+| 3 | GPU acceleration | 5.4–5.7 s/catalogue vs production XGPaint 108.07 s → **19.0–19.8×** |
 
 ## Layout
 - `src/jxpaint/constants.py`, `cosmology.py` — constants + FlatLCDM (matched to Cosmology.jl).

@@ -38,8 +38,11 @@ class BeamedShapeTable:
 
     def __init__(self, coefs, logtheta_min, logtheta_max, logtheta500_min,
                  logtheta500_max, fillvalue=0.0):
-        # coefs: prefiltered parent matrix (Ngrid+2, Ngrid+2)
-        self.coefs = jnp.asarray(coefs, dtype=jnp.float64)
+        # coefs: prefiltered parent matrix (Ngrid+2, Ngrid+2).  Kept as numpy so
+        # loading does not initialise CUDA (lets the painter fork before any GPU
+        # use); a device copy is made lazily on first GPU evaluate.
+        self.coefs = np.asarray(coefs, dtype=np.float64)
+        self._coefs_dev = None
         self.P0, self.P1 = self.coefs.shape           # Ngrid+2
         self.n0 = self.P0 - 2                          # grid points axis0
         self.n1 = self.P1 - 2
@@ -55,8 +58,15 @@ class BeamedShapeTable:
     def logtheta_min(self):
         return self.lt_min
 
+    def coefs_device(self):
+        """Device (jnp) copy of the coefficient table; uploaded once, cached."""
+        if self._coefs_dev is None:
+            self._coefs_dev = jnp.asarray(self.coefs, dtype=jnp.float64)
+        return self._coefs_dev
+
     def evaluate(self, logtheta, logtheta500):
         """Bicubic y_t at (logtheta, logtheta500); zero outside the grid."""
+        coefs = self.coefs_device()
         lt = jnp.asarray(logtheta, dtype=jnp.float64)
         l5 = jnp.asarray(logtheta500, dtype=jnp.float64)
 
@@ -87,7 +97,7 @@ class BeamedShapeTable:
         r1 = jnp.clip(r1, 0, self.P1 - 1)
 
         # gather 4x4 block: coefs[r0[...,a], r1[...,b]]
-        block = self.coefs[r0[..., :, None], r1[..., None, :]]   # (...,4,4)
+        block = coefs[r0[..., :, None], r1[..., None, :]]   # (...,4,4)
         val = jnp.einsum("...a,...ab,...b->...", w0, block, w1)
         return jnp.where(inside, val, self.fill)
 

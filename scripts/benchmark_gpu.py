@@ -17,7 +17,11 @@ from jxpaint.painting.healpix import paint_catalogue_gpu
 
 CAT = "/rds/rds-lxu/tsz_project/tsz_catalogue_benchmark/catalogue_bench_snr_{}.csv"
 REF = "/rds/rds-lxu/tsz_project/tsz_benchmark_maps_scatter/map_bench_snr_{}_y0true.fits"
-XGPAINT_SECONDS = 123.75
+# Ground truth: the actual production painter paint_a10_y0true_2d_mpi.jl
+# self-reports "painted in 108.07 seconds" for catalogue 0 (8 threads, single
+# rank), excluding the one-time 512MB shape-cache load.  (A faithful Julia
+# re-implementation timed 123.75 s; we cite the lower, real number.)
+XGPAINT_SECONDS = 108.07
 
 
 def validate(m, ref):

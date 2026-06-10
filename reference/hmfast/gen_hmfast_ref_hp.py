@@ -5,7 +5,7 @@ for ParametricGNFWPressureProfile.u_r.
 Same cosmology, masses, redshifts, and extraction logic as
 gen_hmfast_ref.py, but writes every numeric value with >=15 significant
 digits to:
-    /scratch/scratch-lxu/jxpaint/reference/hmfast/hmfast_ref_hp.csv
+    /scratch/scratch-lxu/agent_dev/auto_research_agent/JXPaint/reference/hmfast/hmfast_ref_hp.csv
 
 Header:
     M500c_Msun,z,Ez,r500c_Mpc,y0_param,y0_orig,ratio
@@ -72,7 +72,7 @@ mpc_to_cm = Const._Mpc_over_m_ * 100.0
 masses = [1.0e14, 5.0e14, 1.0e15]
 redshifts = [0.16, 0.5, 1.0]
 
-out_path = "/scratch/scratch-lxu/jxpaint/reference/hmfast/hmfast_ref_hp.csv"
+out_path = "/scratch/scratch-lxu/agent_dev/auto_research_agent/JXPaint/reference/hmfast/hmfast_ref_hp.csv"
 
 rows = []
 for M in masses:

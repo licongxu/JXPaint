@@ -21,7 +21,7 @@ using Printf
 using Unitful
 using UnitfulAstro
 
-const OUT = "/scratch/scratch-lxu/jxpaint/reference/data"
+const OUT = "/scratch/scratch-lxu/agent_dev/auto_research_agent/JXPaint/reference/data"
 mkpath(OUT)
 
 # ---- painter cosmology defaults ----

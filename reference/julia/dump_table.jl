@@ -5,7 +5,7 @@ using JLD2
 using Printf
 
 const CACHE = "/scratch/scratch-lxu/tsz_cnc_scatter/paint_with_scatter/cached_a10_beamed2d_shape_ultrahighpres.jld2"
-const OUT = "/scratch/scratch-lxu/jxpaint/reference/data"
+const OUT = "/scratch/scratch-lxu/agent_dev/auto_research_agent/JXPaint/reference/data"
 mkpath(OUT)
 
 obj = JLD2.load(CACHE, "y_shape_beamed2d")

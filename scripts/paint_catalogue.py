@@ -16,7 +16,7 @@ from jxpaint.profiles.shape_table import load_beamed_table
 from jxpaint.painting.healpix import paint_catalogue, paint_catalogue_gpu
 
 CAT_DIR = "/rds/rds-lxu/tsz_project/tsz_catalogue_benchmark"
-OUT_DIR = "/scratch/scratch-lxu/jxpaint/outputs"
+OUT_DIR = "/scratch/scratch-lxu/agent_dev/auto_research_agent/JXPaint/outputs"
 
 
 def main():

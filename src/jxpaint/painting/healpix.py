@@ -9,7 +9,9 @@ query_disc is called inclusive=True (a superset of centre-within-theta_max
 pixels); the strict theta < theta_max test then reproduces XGPaint's
 centre-within-radius painted set exactly.
 """
+import os
 import time
+import multiprocessing as mp
 
 import numpy as np
 import healpy as hp
@@ -112,14 +114,52 @@ _scatter_paint_jit = jax.jit(
     _scatter_paint, static_argnums=(1, 2, 3, 4, 5, 6, 7, 8, 9, 16))
 
 
+def _disc_worker(args):
+    """Worker: query_disc over a halo slice. Returns (pix_concat, counts).
+
+    Uses only healpy/numpy (no JAX/CUDA), so it is safe under fork.
+    """
+    vec_s, thmax_s, nside = args
+    out = []
+    for i in range(len(thmax_s)):
+        out.append(hp.query_disc(nside, vec_s[i], thmax_s[i],
+                                 inclusive=True, nest=False))
+    counts = np.fromiter((x.size for x in out), dtype=np.int64, count=len(out))
+    pix = np.concatenate(out) if out else np.empty(0, dtype=np.int64)
+    return pix, counts
+
+
+def _assemble_discs(vec, thmax, nside, nproc):
+    """Find disc pixels for all halos in parallel; return (allpix, allh)."""
+    Nh = len(thmax)
+    if nproc <= 1 or Nh < 2000:
+        pix, counts = _disc_worker((vec, thmax, nside))
+        return pix, np.repeat(np.arange(Nh, dtype=np.int64), counts)
+    bounds = np.linspace(0, Nh, nproc + 1).astype(np.int64)
+    args = [(vec[a:b], thmax[a:b], nside)
+            for a, b in zip(bounds[:-1], bounds[1:])]
+    ctx = mp.get_context("fork")
+    with ctx.Pool(nproc) as pool:
+        results = pool.map(_disc_worker, args)
+    pix_parts, h_parts = [], []
+    for (pix_s, counts_s), a, b in zip(results, bounds[:-1], bounds[1:]):
+        pix_parts.append(pix_s)
+        h_parts.append(np.repeat(np.arange(a, b, dtype=np.int64), counts_s))
+    return np.concatenate(pix_parts), np.concatenate(h_parts)
+
+
 def paint_catalogue_gpu(z, M_1e14, lon, lat, y0_true, shape_table,
                         nside=C.NSIDE, cosmo=None, gpu_chunk=20_000_000,
-                        verbose=False):
-    """Fast painter: host assembles disc contributions, GPU does the math.
+                        nproc=None, verbose=False):
+    """Fast painter: host assembles disc contributions (parallel), GPU math.
 
     Returns a RING-ordered float64 numpy map.  Bit-for-bit equal to
     paint_catalogue (same chord/bicubic/scatter math, just fused on device).
+    Disc-finding is parallelised over `nproc` fork workers; geometry is numpy
+    so CUDA is not initialised before the fork.
     """
+    if nproc is None:
+        nproc = min(16, max(1, (os.cpu_count() or 2) - 1))
     npix = hp.nside2npix(nside)
     ra, dec = geom.catalogue_to_radec(lon, lat)
     vec = geom.radec_to_vec(ra, dec)
@@ -130,14 +170,7 @@ def paint_catalogue_gpu(z, M_1e14, lon, lat, y0_true, shape_table,
     Nh = len(M_1e14)
 
     t0 = time.time()
-    disc_list = []
-    counts = np.empty(Nh, dtype=np.int64)
-    for i in range(Nh):
-        d = hp.query_disc(nside, vec[i], thmax[i], inclusive=True, nest=False)
-        disc_list.append(d)
-        counts[i] = d.size
-    allpix = np.concatenate(disc_list)
-    allh = np.repeat(np.arange(Nh, dtype=np.int64), counts)
+    allpix, allh = _assemble_discs(vec, thmax, nside, nproc)
     t_host_disc = time.time() - t0
 
     t0 = time.time()
@@ -145,7 +178,7 @@ def paint_catalogue_gpu(z, M_1e14, lon, lat, y0_true, shape_table,
     t_pv = time.time() - t0
 
     st = shape_table
-    coefs = st.coefs
+    coefs = st.coefs_device()    # uploads table to GPU once (after the fork)
     # device arrays
     t0 = time.time()
     out_acc = np.zeros(npix, dtype=np.float64)

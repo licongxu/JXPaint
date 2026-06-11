@@ -29,6 +29,7 @@ built once and reused for every cosmology (per-cosmology cost ≈6 ms of geometr
 - `src/jxpaint/painting/gpu_native.py` — **fully-GPU painter** (RING pix2vec + disc-finding + bicubic + scatter, jitted fixed-size kernel).
 - `scripts/{paint_catalogue,validate_map,benchmark_gpu,stress_test,cosmology_demo}.py`.
 - `tests/{test_phase1,test_phase2}.py`.
+- `tutorials/` — Jupyter notebooks (quickstart, profiles, speed + cosmology).
 - `reference/` — Julia/hmfast reference generators and gold values.
 
 ## Run

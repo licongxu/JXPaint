@@ -47,6 +47,18 @@
       "title": ">=5x speedup vs XGPaint, GPU-optimized",
       "state": "passing",
       "evidence": "GPU painter 5.4-5.7 s/catalogue vs production XGPaint 108.07 s (self-reported) -> 19.0-19.8x; maps bit-for-bit (max rel err ~7e-11). Parallel fork disc-finding + fused GPU kernel. scripts/benchmark_gpu.py"
+    },
+    {
+      "id": "phase4_gpu_native",
+      "title": "Fully-GPU painter (no CPU host loop), jitted fixed-size kernel",
+      "state": "passing",
+      "evidence": "gpu_native.paint_catalogue_gpu_native: 0.18 s/catalogue (~590x vs XGPaint 108s), bit-for-bit max rel ~1.2e-10 across cat 0..999; GPU pix2vec 4e-14 vs healpy, GPU disc set exact. scripts/stress_test.py, tests/test_phase2.py::test_gpu_native_matches_cpu"
+    },
+    {
+      "id": "phase4_cosmology_no_rebuild",
+      "title": "Varying cosmology needs no interpolator rebuild",
+      "state": "passing",
+      "evidence": "Shape table cosmology-independent: 12 cosmologies, 1 table load, 0 rebuilds, ~6 ms geometry/cosmology, maps vary 10.9%. scripts/cosmology_demo.py, tests/test_phase2.py::test_cosmology_no_interpolator_rebuild"
     }
   ]
 }

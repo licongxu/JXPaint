@@ -50,9 +50,57 @@ def test_gpu_cpu_painter_agree():
     assert rel.max() < 1e-12
 
 
+def test_gpu_native_matches_cpu():
+    """Fully-GPU painter (gpu_native) == CPU reference painter on a subset."""
+    if not os.path.exists(CAT):
+        print("  SKIP: catalogue not present"); return
+    import pandas as pd
+    from jxpaint.profiles.shape_table import load_beamed_table
+    from jxpaint.painting.healpix import paint_catalogue
+    from jxpaint.painting.gpu_native import paint_catalogue_gpu_native
+    df = pd.read_csv(CAT, nrows=5000)
+    st = load_beamed_table()
+    a = paint_catalogue(df.z.values, df.M.values, df.lon.values, df.lat.values,
+                        df.y0_true.values, st)
+    b = paint_catalogue_gpu_native(df.z.values, df.M.values, df.lon.values,
+                                   df.lat.values, df.y0_true.values, st)
+    mask = a > 0
+    rel = np.abs(a[mask] - b[mask]) / a[mask]
+    extra = int(np.count_nonzero((b > 0) & (a == 0)))
+    print(f"  gpu_native vs CPU: max rel {rel.max():.2e}  extra px {extra}")
+    assert rel.max() < 1e-9 and extra == 0
+
+
+def test_cosmology_no_interpolator_rebuild():
+    """Same table object reused across cosmologies; maps differ, no rebuild."""
+    if not os.path.exists(CAT):
+        print("  SKIP: catalogue not present"); return
+    import pandas as pd
+    from jxpaint.profiles.shape_table import load_beamed_table
+    from jxpaint.cosmology import FlatLCDM
+    from jxpaint.painting.gpu_native import paint_catalogue_gpu_native
+    df = pd.read_csv(CAT, nrows=5000)
+    st = load_beamed_table()
+    m1 = paint_catalogue_gpu_native(df.z.values, df.M.values, df.lon.values,
+                                    df.lat.values, df.y0_true.values, st,
+                                    cosmo=FlatLCDM(h=0.64, Omega_m=0.27))
+    cid1 = id(st._coefs_dev)
+    m2 = paint_catalogue_gpu_native(df.z.values, df.M.values, df.lon.values,
+                                    df.lat.values, df.y0_true.values, st,
+                                    cosmo=FlatLCDM(h=0.74, Omega_m=0.35))
+    cid2 = id(st._coefs_dev)
+    # table device array uploaded once, identical object across cosmologies
+    assert cid1 == cid2 and st._coefs_dev is not None
+    # maps differ (cosmology applied)
+    assert abs(m1.sum() - m2.sum()) / m1.sum() > 1e-3
+    print(f"  table reused (same device obj), maps differ: "
+          f"sum1={m1.sum():.4f} sum2={m2.sum():.4f}")
+
+
 if __name__ == "__main__":
     fails = 0
-    for fn in [test_theta_max_uses_unbiased_delta200, test_gpu_cpu_painter_agree]:
+    for fn in [test_theta_max_uses_unbiased_delta200, test_gpu_cpu_painter_agree,
+               test_gpu_native_matches_cpu, test_cosmology_no_interpolator_rebuild]:
         try:
             print(f"[{fn.__name__}]"); fn(); print("  PASS")
         except AssertionError as e:

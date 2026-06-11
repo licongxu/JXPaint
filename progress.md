@@ -71,6 +71,34 @@ scatter-add (jit). Per-catalogue split: disc ~2.1s, pix2vec ~1.3s, gpu ~1.3s.
 Table coefs kept as numpy in BeamedShapeTable (lazy device copy) so loading
 the table does not init CUDA (prerequisite for the pre-GPU fork).
 
+### PHASE 4 — Fully-GPU painter + cosmology independence: PASSING (~590x)
+`painting/gpu_native.py::paint_catalogue_gpu_native`. NO healpy / CPU host loop:
+RING pix2vec, disc-finding (ring-range -> phi-window -> pixel expand via
+cumsum/searchsorted), bicubic, scatter -- all on device. Painting kernel is one
+jitted FIXED-SIZE program (disc output padded to e_max=Nh*24, n_max=Nh*220 with a
+valid mask) so the whole pipeline compiles ONCE per halo count and is reused for
+every cosmology/catalogue (no per-call recompile). **0.18 s/catalogue ->
+~590x vs XGPaint 108 s**, bit-for-bit (max pixel rel err ~1.2e-10) across
+catalogues 0..999 (scripts/stress_test.py). Edge cases (poles, giant haloes,
+extreme z) match the CPU painter (0 extra/missing px). GPU pix2vec matches
+healpy 4e-14; GPU disc set matches healpy exactly (0 missing/extra over 3001 halos).
+
+NOTE: it is NOT GPU vs GPU -- XGPaint is CPU-only. The actual GPU compute is
+~0.07 s disc + ~0.1 s paint; the win is algorithmic (vectorised geometry +
+on-GPU disc-finding) + GPU. Caps (e_per_halo/n_per_halo) assume a realistic mass
+function; a giant-heavy catalogue trips a clear assert -> raise the caps.
+
+**Cosmology variation needs NO interpolator rebuild** (scripts/cosmology_demo.py,
+tests/test_phase2.py::test_cosmology_no_interpolator_rebuild). The beam-convolved
+shape table y_t(logtheta,logtheta500) depends ONLY on the gNFW shape params +
+beam FWHM -- not on cosmology or B. So it is loaded ONCE (~0.4 s) and reused for
+all cosmologies; the only cosmology-dependent step is the vectorised geometry
+theta500(M,z) at ~6 ms/cosmology. Demo: 12 cosmologies, 1 table load, 0 rebuilds,
+~0.18 s paint each, maps vary 10.9% in flux (cosmology genuinely applied).
+This is exactly the XGPaint pain point (rebuilding the 8192^2 FFTLog interpolator
+per model) that JXPaint removes by separating the cosmology-independent table
+from the geometry.
+
 ## How to reproduce
 - Phase 1: `PYTHONPATH=src python tests/test_phase1.py`
 - Phase 2/3 fast: `python tests/test_phase2.py`

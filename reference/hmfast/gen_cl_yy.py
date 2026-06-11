@@ -86,9 +86,18 @@ def main():
 
     # --- Integration grids ---
     # Mass: M500c in PHYSICAL Msun, 1e14 .. 1e16 (catalogue mass limit upward).
+    # Mass is fully converged: Nm=40 log is already <0.1%; Nm=80 is overkill-safe.
     m = jnp.asarray(np.logspace(14.0, 16.0, 80))
-    # Redshift: catalogue range.
-    z = jnp.asarray(np.linspace(0.005, 2.81, 80))
+    # Redshift: catalogue range, LOG-spaced.
+    #
+    # CONVERGENCE FIX (see conv_test.py): the previous LINEAR z grid was badly
+    # under-resolved at low z, where the tSZ 1-halo integrand peaks (nearby
+    # massive clusters). Nz=80 LINEAR put only ~3 nodes at z<0.1 and was +90%
+    # off at ell=30, -14% at ell=100, -5% at ell=300 vs the converged result;
+    # even Nz=320 LINEAR was still +7.5%/-2.2% at ell=30/100. LOG spacing in z
+    # (z_min=0.005) puts ~76 nodes at z<0.1 with Nz=160 and converges to
+    # <0.05% at ALL ell. Use Nz=160 log.
+    z = jnp.asarray(np.logspace(np.log10(0.005), np.log10(2.81), 160))
     # Multipoles (match the verified target grid, ell up to 2500).
     ell = np.unique(np.logspace(1, np.log10(2500), 60).astype(int))
     l = jnp.asarray(ell.astype(float))

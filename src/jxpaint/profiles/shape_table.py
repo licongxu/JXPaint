@@ -118,3 +118,50 @@ def load_beamed_table(data_dir=_DEF_DIR) -> BeamedShapeTable:
     coefs = raw.reshape((p0n, p1n), order="F")    # Julia column-major parent
     return BeamedShapeTable(coefs, float(lt_min), float(lt_max),
                             float(l5_min), float(l5_max), fill)
+
+
+def build_beamed_shape_table(fwhm_arcmin, profile=None, n_logtheta=2048,
+                             n_logtheta500=384, logtheta_min=-16.5, logtheta_max=2.5,
+                             logtheta500_min=-9.7, logtheta500_max=3.0, lmax=None):
+    """Build a beam-convolved 2D shape table for an arbitrary Gaussian beam.
+
+    Convolves the unbeamed projected GNFW shape F(theta/theta500) with a Gaussian
+    of the given FWHM (arcmin), per theta500 column, via healpy beam2bl/bl2beam
+    (reproduces XGPaint's 10' table to <1%).  Returns a BeamedShapeTable using
+    bicubic coefficients (scipy spline prefilter), compatible with the painter.
+    """
+    import healpy as hp
+    from scipy.ndimage import spline_filter
+    if profile is None:
+        from .custom_gnfw import CustomGNFWPressureProfile
+        profile = CustomGNFWPressureProfile()
+
+    fwhm = np.radians(fwhm_arcmin / 60.0)
+    if lmax is None:
+        lmax = int(min(12.0 * np.pi / fwhm, 12000))      # resolve the beam
+    bl = hp.gauss_beam(fwhm, lmax)
+
+    logth = np.linspace(logtheta_min, logtheta_max, n_logtheta)
+    th = np.exp(logth)
+    logth5 = np.linspace(logtheta500_min, logtheta500_max, n_logtheta500)
+
+    # precompute the unbeamed projected shape F(x) on a fine log-x grid
+    xg = np.logspace(-10, 8, 20000)
+    Fg = np.asarray(profile.F(xg))
+    Fi = lambda x: np.interp(np.log(np.clip(x, xg[0], xg[-1])), np.log(xg), Fg,
+                             left=Fg[0], right=0.0)
+    # theta grid for the beam transform: fine near 0, out to 5 deg
+    tfine = np.concatenate([np.linspace(0, np.radians(0.5), 5000)[:-1],
+                            np.linspace(np.radians(0.5), np.radians(5.0), 2000)])
+
+    A = np.zeros((n_logtheta, n_logtheta500))
+    for j, l5 in enumerate(logth5):
+        t5 = np.exp(l5)
+        pl = hp.beam2bl(Fi(tfine / t5), tfine, lmax)
+        beamed = hp.bl2beam(pl * bl, tfine)
+        A[:, j] = np.clip(np.interp(th, tfine, beamed, right=0.0), 0.0, None)
+
+    coefs = np.pad(spline_filter(A, order=3, mode="nearest"), ((1, 1), (1, 1)),
+                   mode="edge")
+    return BeamedShapeTable(coefs, logtheta_min, logtheta_max,
+                            logtheta500_min, logtheta500_max)

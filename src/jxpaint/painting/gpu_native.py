@@ -203,14 +203,17 @@ def _ring_tables_device(nside):
     return _RING_CACHE[nside]
 
 
-def compute_geometry(z, M_1e14, lon, lat, y0_true, cosmo, B):
+def compute_geometry(z, M_1e14, lon, lat, y0_true, cosmo, B, fwhm_arcmin=None):
     """All per-halo geometry on device: centre vectors, theta500, theta_max, amp.
 
     This is the ONLY cosmology-dependent step.  The beam-convolved shape table is
     cosmology-independent, so varying cosmology only re-runs this (vectorised,
-    ~ms) -- no interpolator rebuild.
+    ~ms) -- no interpolator rebuild.  fwhm_arcmin sets the theta_max beam floor
+    (defaults to the 10' production beam).
     """
     from .. import constants as C
+    if fwhm_arcmin is None:
+        fwhm_arcmin = C.FWHM_ARCMIN
     z = jnp.asarray(z, jnp.float64); M = jnp.asarray(M_1e14, jnp.float64)
     lon = jnp.asarray(lon, jnp.float64); lat = jnp.asarray(lat, jnp.float64)
     ra = jnp.mod(lon + jnp.pi, 2 * jnp.pi) - jnp.pi
@@ -221,7 +224,7 @@ def compute_geometry(z, M_1e14, lon, lat, y0_true, cosmo, B):
     R500 = cosmo.R_delta(M_kg, z, 500) / B ** (1.0 / 3.0)
     th500 = cosmo.angular_size(R500, z)
     R200 = cosmo.R_delta(M_kg, z, 200)
-    theta1 = 2.0 * C.FWHM_ARCMIN * (jnp.pi / 10800.0)
+    theta1 = 2.0 * fwhm_arcmin * (jnp.pi / 10800.0)
     thmax = jnp.minimum(jnp.maximum(theta1, 4.0 * cosmo.angular_size(R200, z)),
                         jnp.deg2rad(C.THETA_MAX_DEG))
     amp = jnp.asarray(y0_true, jnp.float64) / B ** (1.0 / 3.0)
@@ -271,7 +274,7 @@ def _paint_chunk(pix_c, valid_c, halo_c, vec, thmax, log5, amp, coefs,
 
 def paint_catalogue_gpu_native(z, M_1e14, lon, lat, y0_true, shape_table,
                                nside=1024, cosmo=None, chunk=None,
-                               e_per_halo=24, n_per_halo=220):
+                               e_per_halo=24, n_per_halo=220, fwhm_arcmin=None):
     """Fully on-GPU painter: geometry + disc-finding + pix2vec + bicubic + scatter.
 
     No healpy / CPU host loop.  Fixed-size disc output + a jitted fixed-size paint
@@ -297,7 +300,7 @@ def paint_catalogue_gpu_native(z, M_1e14, lon, lat, y0_true, shape_table,
         n_max = ((n_max + chunk - 1) // chunk) * chunk  # multiple of chunk (fixed slices)
 
     vec, th500, thmax, amp = compute_geometry(z, M_1e14, lon, lat, y0_true,
-                                              cosmo, C.B_BIAS)
+                                              cosmo, C.B_BIAS, fwhm_arcmin=fwhm_arcmin)
     log5 = jnp.log(th500)
     pix, halo, valid, E_act, N_act = disc_pixels_fixed(
         vec, thmax, Tdev, nside, e_max, n_max)

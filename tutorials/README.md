@@ -13,9 +13,10 @@ running anything.
 
 | Notebook | What it covers |
 |----------|----------------|
-| [`01_quickstart.ipynb`](01_quickstart.ipynb) | Load a catalogue, paint a Compton-$y$ map on the GPU (~0.2 s), validate bit-for-bit vs the XGPaint reference, visualise. |
+| [`01_quickstart.ipynb`](01_quickstart.ipynb) | Paint a Compton-$y$ map on the GPU (~0.2 s), validate bit-for-bit vs the XGPaint reference, and compare the power spectrum to the **hmfast** halo-model theory (imported directly; beam-deconvolved data vs unbeamed Arnaud-GNFW 1-halo). |
 | [`02_profiles.ipynb`](02_profiles.ipynb) | The CustomGNFW profile: 3D shape, projected $F(x)$, $\theta_{500}$ and the $y_0$ amplitudes vs $(M,z)$, and the beam-convolved 2D shape table. |
-| [`03_speed_and_cosmology.ipynb`](03_speed_and_cosmology.ipynb) | Speed vs XGPaint (~600×), and varying cosmology with **0 interpolator rebuilds** (the table is cosmology-independent). |
+| [`03_speed_and_cosmology.ipynb`](03_speed_and_cosmology.ipynb) | Speed vs XGPaint (~600×), time vs $N_{\rm side}$ scaling, and varying cosmology with **0 interpolator rebuilds** (the table is cosmology-independent). |
+| [`04_highres_beam.ipynb`](04_highres_beam.ipynb) | Build a **1.4 arcmin** beam table (`build_beamed_shape_table`), paint at **$N_{\rm side}=4096$**, and compare the beam-deconvolved spectrum to the unbeamed hmfast theory out to $\ell\sim4000$. |
 
 **Note:** the first GPU paint call in a session JIT-compiles the kernel (a few
 seconds); every subsequent call — any catalogue or cosmology of the same halo

@@ -27,6 +27,7 @@ built once and reused for every cosmology (per-cosmology cost ≈6 ms of geometr
 - `src/jxpaint/painting/geometry.py` — geometry (numpy mirror cosmology).
 - `src/jxpaint/painting/healpix.py` — CPU + hybrid (GPU kernel, multiprocess disc) painters.
 - `src/jxpaint/painting/gpu_native.py` — **fully-GPU painter** (RING pix2vec + disc-finding + bicubic + scatter, jitted fixed-size kernel).
+- `src/jxpaint/painting/patch.py` — rectangular flat-sky catalogue cutouts such as 10 x 10 degree patches.
 - `scripts/{paint_catalogue,validate_map,benchmark_gpu,stress_test,cosmology_demo}.py`.
 - `tests/{test_phase1,test_phase2}.py`.
 - `tutorials/` — Jupyter notebooks (quickstart, profiles, speed + cosmology).
@@ -38,6 +39,8 @@ source /scratch/scratch-lxu/venv/cmbagent_env/bin/activate
 PYTHONPATH=src python tests/test_phase1.py          # Phase 1
 python tests/test_phase2.py                         # painter + cosmology checks
 python scripts/paint_catalogue.py 0                 # fully-GPU paint (--hybrid, --cpu)
+python scripts/paint_catalogue.py 0 --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256
+python scripts/paint_catalogue.py --csv halos.csv --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256 --output-path patch_00.npz
 python scripts/stress_test.py                       # bit-for-bit + edge cases + scale
 python scripts/cosmology_demo.py                    # interpolator reused across cosmologies
 ```

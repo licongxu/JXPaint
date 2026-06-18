@@ -23,16 +23,17 @@ from . import geometry as geom
 
 
 def paint_catalogue(z, M_1e14, lon, lat, y0_true, shape_table,
-                    nside=C.NSIDE, cosmo=None, chunk=4000, progress=False):
+                    nside=C.NSIDE, cosmo=None, chunk=4000, progress=False,
+                    bias_B=C.B_BIAS):
     """Paint a Compton-y map. Returns a RING-ordered float64 map (npix,)."""
     npix = hp.nside2npix(nside)
     out = np.zeros(npix, dtype=np.float64)
 
     ra, dec = geom.catalogue_to_radec(lon, lat)
     vec = geom.radec_to_vec(ra, dec)                      # (Nh, 3)
-    th500 = geom.theta500_array(M_1e14, z, cosmo=cosmo)   # (Nh,)
-    thmax = geom.theta_max_array(M_1e14, z, cosmo=cosmo)  # (Nh,)
-    amp = geom.amplitude_array(y0_true)                   # (Nh,)
+    th500 = geom.theta500_array(M_1e14, z, cosmo=cosmo, B=bias_B)   # (Nh,)
+    thmax = geom.theta_max_array(M_1e14, z, cosmo=cosmo)             # (Nh,)
+    amp = geom.amplitude_array(y0_true, B=bias_B)                    # (Nh,)
     log_th500 = np.log(th500)
     thmin = np.exp(shape_table.logtheta_min)              # exp(-16.5)
 
@@ -150,7 +151,7 @@ def _assemble_discs(vec, thmax, nside, nproc):
 
 def paint_catalogue_gpu(z, M_1e14, lon, lat, y0_true, shape_table,
                         nside=C.NSIDE, cosmo=None, gpu_chunk=20_000_000,
-                        nproc=None, verbose=False):
+                        nproc=None, verbose=False, bias_B=C.B_BIAS):
     """Fast painter: host assembles disc contributions (parallel), GPU math.
 
     Returns a RING-ordered float64 numpy map.  Bit-for-bit equal to
@@ -163,9 +164,9 @@ def paint_catalogue_gpu(z, M_1e14, lon, lat, y0_true, shape_table,
     npix = hp.nside2npix(nside)
     ra, dec = geom.catalogue_to_radec(lon, lat)
     vec = geom.radec_to_vec(ra, dec)
-    th500 = geom.theta500_array(M_1e14, z, cosmo=cosmo)
+    th500 = geom.theta500_array(M_1e14, z, cosmo=cosmo, B=bias_B)
     thmax = geom.theta_max_array(M_1e14, z, cosmo=cosmo)
-    amp = geom.amplitude_array(y0_true)
+    amp = geom.amplitude_array(y0_true, B=bias_B)
     log_th500 = np.log(th500)
     Nh = len(M_1e14)
 

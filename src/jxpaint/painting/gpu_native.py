@@ -274,7 +274,8 @@ def _paint_chunk(pix_c, valid_c, halo_c, vec, thmax, log5, amp, coefs,
 
 def paint_catalogue_gpu_native(z, M_1e14, lon, lat, y0_true, shape_table,
                                nside=1024, cosmo=None, chunk=None,
-                               e_per_halo=24, n_per_halo=220, fwhm_arcmin=None):
+                               e_per_halo=24, n_per_halo=220, fwhm_arcmin=None,
+                               bias_B=None):
     """Fully on-GPU painter: geometry + disc-finding + pix2vec + bicubic + scatter.
 
     No healpy / CPU host loop.  Fixed-size disc output + a jitted fixed-size paint
@@ -289,6 +290,8 @@ def paint_catalogue_gpu_native(z, M_1e14, lon, lat, y0_true, shape_table,
     from .. import constants as C
     if cosmo is None:
         cosmo = default_cosmology()
+    if bias_B is None:
+        bias_B = C.B_BIAS
     Tdev = _ring_tables_device(nside)
     npix = 12 * nside * nside
     Nh = len(M_1e14)
@@ -300,7 +303,7 @@ def paint_catalogue_gpu_native(z, M_1e14, lon, lat, y0_true, shape_table,
         n_max = ((n_max + chunk - 1) // chunk) * chunk  # multiple of chunk (fixed slices)
 
     vec, th500, thmax, amp = compute_geometry(z, M_1e14, lon, lat, y0_true,
-                                              cosmo, C.B_BIAS, fwhm_arcmin=fwhm_arcmin)
+                                              cosmo, bias_B, fwhm_arcmin=fwhm_arcmin)
     log5 = jnp.log(th500)
     pix, halo, valid, E_act, N_act = disc_pixels_fixed(
         vec, thmax, Tdev, nside, e_max, n_max)

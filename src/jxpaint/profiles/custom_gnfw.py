@@ -160,6 +160,22 @@ class CustomGNFWPressureProfile:
         return (C.SIGMA_T_CM2 / C.M_E_C2_EV) * P500c * R500_cm * Fx
 
 
+class ArnaudGNFWPressureProfile(CustomGNFWPressureProfile):
+    """Arnaud gNFW pressure profile with no hydrostatic mass bias (B=1).
+
+    This is the simple Arnaud parameterization used by hmfast-style catalogue
+    painting when the requested mass bias is unity.
+    """
+
+    def __init__(self, cosmo: FlatLCDM = None):
+        super().__init__(B=1.0, cosmo=cosmo)
+
+
+def arnaud_gnfw_b1_profile(cosmo: FlatLCDM = None):
+    """Return the simple Arnaud gNFW profile with B=1."""
+    return ArnaudGNFWPressureProfile(cosmo=cosmo)
+
+
 jax.tree_util.register_pytree_node(
     CustomGNFWPressureProfile,
     lambda o: o._tree_flatten(),

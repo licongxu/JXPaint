@@ -65,7 +65,8 @@ def patch_pixel_vectors(center_ra, center_dec, width_deg, height_deg,
 def paint_catalogue_patch(z, M_1e14, lon, lat, y0_true, shape_table,
                           center_ra_deg, center_dec_deg, width_deg=10.0,
                           height_deg=10.0, pixel_size_arcmin=1.0,
-                          nx=None, ny=None, cosmo=None, progress=False):
+                          nx=None, ny=None, cosmo=None, progress=False,
+                          bias_B=None):
     """Paint a rectangular flat-sky Compton-y patch.
 
     Catalogue ``lon`` and ``lat`` follow the usual JXPaint/XGPaint convention
@@ -73,6 +74,9 @@ def paint_catalogue_patch(z, M_1e14, lon, lat, y0_true, shape_table,
     ``(image, metadata)`` where ``image`` has shape ``(ny, nx)`` and metadata
     contains coordinate axes and patch settings.
     """
+    if bias_B is None:
+        from .. import constants as C
+        bias_B = C.B_BIAS
     center_ra = np.deg2rad(center_ra_deg)
     center_dec = np.deg2rad(center_dec_deg)
     pix_vec, x_deg, y_deg = patch_pixel_vectors(
@@ -82,9 +86,9 @@ def paint_catalogue_patch(z, M_1e14, lon, lat, y0_true, shape_table,
 
     ra, dec = geom.catalogue_to_radec(lon, lat)
     halo_vec = geom.radec_to_vec(ra, dec)
-    th500 = geom.theta500_array(M_1e14, z, cosmo=cosmo)
+    th500 = geom.theta500_array(M_1e14, z, cosmo=cosmo, B=bias_B)
     thmax = geom.theta_max_array(M_1e14, z, cosmo=cosmo)
-    amp = geom.amplitude_array(y0_true)
+    amp = geom.amplitude_array(y0_true, B=bias_B)
     log_th500 = np.log(th500)
     thmin = np.exp(shape_table.logtheta_min)
 
@@ -136,6 +140,7 @@ def paint_catalogue_patch(z, M_1e14, lon, lat, y0_true, shape_table,
         "x_deg": x_deg,
         "y_deg": y_deg,
         "candidate_halos": int(candidates.size),
+        "bias_B": float(bias_B),
     }
     return image, meta
 
@@ -174,4 +179,5 @@ def write_patch(path, image, metadata):
         width_deg=metadata["width_deg"], height_deg=metadata["height_deg"],
         pixel_size_arcmin=metadata["pixel_size_arcmin"],
         nx=metadata["nx"], ny=metadata["ny"],
+        bias_B=metadata.get("bias_B", np.nan),
         candidate_halos=metadata["candidate_halos"])

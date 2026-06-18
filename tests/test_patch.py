@@ -56,3 +56,25 @@ def test_patch_ignores_distant_halo():
 
     assert meta["candidate_halos"] == 0
     assert np.count_nonzero(image) == 0
+
+
+def test_patch_respects_bias_b_one():
+    from jxpaint.painting.patch import paint_catalogue_patch
+
+    image, meta = paint_catalogue_patch(
+        z=np.array([0.2]),
+        M_1e14=np.array([5.0]),
+        lon=np.array([0.0]),
+        lat=np.array([np.pi / 2.0]),
+        y0_true=np.array([2.0]),
+        shape_table=UnitShapeTable(),
+        center_ra_deg=0.0,
+        center_dec_deg=0.0,
+        width_deg=2.0,
+        height_deg=2.0,
+        pixel_size_arcmin=10.0,
+        bias_B=1.0,
+    )
+
+    assert image.max() == 2.0
+    assert meta["bias_B"] == 1.0

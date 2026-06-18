@@ -41,6 +41,8 @@ python tests/test_phase2.py                         # painter + cosmology checks
 python scripts/paint_catalogue.py 0                 # fully-GPU paint (--hybrid, --cpu)
 python scripts/paint_catalogue.py 0 --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256
 python scripts/paint_catalogue.py --csv halos.csv --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256 --output-path patch_00.npz
+python scripts/paint_catalogue.py --csv halos.csv --profile arnaud-b1 --output-path arnaud_b1_fullsky.fits
+python scripts/paint_catalogue.py --csv halos.csv --profile arnaud-b1 --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256 --output-path arnaud_b1_patch_00.npz
 python scripts/stress_test.py                       # bit-for-bit + edge cases + scale
 python scripts/cosmology_demo.py                    # interpolator reused across cosmologies
 ```

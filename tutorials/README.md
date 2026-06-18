@@ -18,6 +18,7 @@ running anything.
 | [`03_speed_and_cosmology.ipynb`](03_speed_and_cosmology.ipynb) | Speed vs XGPaint (~600×), time vs $N_{\rm side}$ scaling, and varying cosmology with **0 interpolator rebuilds** (the table is cosmology-independent). |
 | [`04_highres_beam.ipynb`](04_highres_beam.ipynb) | Build a **1.4 arcmin** beam table (`build_beamed_shape_table`), paint at **$N_{\rm side}=4096$**, and compare the beam-deconvolved spectrum to the unbeamed hmfast theory out to $\ell\sim4000$. |
 | [`05_painting_patches.py`](05_painting_patches.py) | Paint a rectangular flat-sky catalogue cutout, e.g. **10 x 10 degrees**, save it as `.npz`, and make a quick PNG preview. |
+| [`06_arnaud_b1_fullsky_and_patches.py`](06_arnaud_b1_fullsky_and_patches.py) | Demo commands for full-sky and **10 x 10 degree** patch painting with the simple Arnaud gNFW pressure profile and `B=1`. |
 
 **Note:** the first GPU paint call in a session JIT-compiles the kernel (a few
 seconds); every subsequent call — any catalogue or cosmology of the same halo

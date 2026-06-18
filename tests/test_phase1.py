@@ -142,3 +142,12 @@ if __name__ == "__main__":
             print(f"  FAIL: {e}")
     print("\n", "ALL PASS" if fails == 0 else f"{fails} FAILED")
     sys.exit(1 if fails else 0)
+
+
+def test_arnaud_b1_profile_sets_bias():
+    from jxpaint.profiles.custom_gnfw import ArnaudGNFWPressureProfile
+
+    p = ArnaudGNFWPressureProfile()
+    assert p.B == 1.0
+    y0 = p.y0_arnaud(np.array([5.0]), np.array([0.2]))
+    assert float(y0[0]) > 0.0

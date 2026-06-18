@@ -8,7 +8,7 @@ rectangular flat-sky cutout (for example 10 x 10 degrees).
 Usage:
   python scripts/paint_catalogue.py <index> [output.fits] [--cpu|--hybrid]
   python scripts/paint_catalogue.py <index> --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256
-  python scripts/paint_catalogue.py --csv halos.csv --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256 --output-path patch_00.npz
+  python scripts/paint_catalogue.py --csv halos.csv --profile arnaud-b1 --patch --center-ra-deg 0 --center-dec-deg 0 --npix 256 --output-path patch_00.npz
 """
 import argparse
 import os
@@ -24,10 +24,28 @@ from jxpaint.profiles.shape_table import load_beamed_table
 from jxpaint.painting.healpix import paint_catalogue, paint_catalogue_gpu
 from jxpaint.painting.gpu_native import paint_catalogue_gpu_native
 from jxpaint.painting.patch import paint_catalogue_patch, write_patch
-from jxpaint.profiles.custom_gnfw import CustomGNFWPressureProfile
+from jxpaint.profiles.custom_gnfw import (
+    ArnaudGNFWPressureProfile,
+    CustomGNFWPressureProfile,
+)
+from jxpaint import constants as C
 
 CAT_DIR = "/rds/rds-lxu/tsz_project/tsz_catalogue_benchmark"
 OUT_DIR = "/scratch/scratch-lxu/agent_dev/auto_research_agent/JXPaint/outputs"
+
+
+def selected_bias(args):
+    if args.bias_B is not None:
+        return args.bias_B
+    if args.profile == "arnaud-b1":
+        return 1.0
+    return C.B_BIAS
+
+
+def selected_profile(args):
+    if args.profile == "arnaud-b1":
+        return ArnaudGNFWPressureProfile()
+    return CustomGNFWPressureProfile(B=selected_bias(args))
 
 
 def load_catalogue(args):
@@ -63,7 +81,7 @@ def load_catalogue(args):
     if "y0_true" in df:
         out["y0_true"] = df["y0_true"]
     else:
-        profile = CustomGNFWPressureProfile()
+        profile = selected_profile(args)
         out["y0_true"] = np.asarray(profile.y0_arnaud(
             out["M"].to_numpy(), out["z"].to_numpy()))
     return out, args.csv
@@ -75,6 +93,9 @@ def main():
     parser.add_argument("output", nargs="?")
     parser.add_argument("--csv", help="input CSV; supports M/z/lon/lat/y0_true or FLAMINGO Mass_Msun/Redshift/RA_deg/DEC_deg")
     parser.add_argument("--output-path", help="output path, useful with --csv")
+    parser.add_argument("--profile", choices=["xgpaint", "arnaud-b1"], default="xgpaint",
+                        help="pressure normalization/profile for CSV y0 generation")
+    parser.add_argument("--bias-B", type=float, help="mass-bias B used in y0 generation and painting geometry")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--cpu", action="store_true")
     mode.add_argument("--hybrid", action="store_true")
@@ -97,8 +118,9 @@ def main():
                   if args.patch else "y0true.fits")
         out_path = os.path.join(OUT_DIR, f"jxpaint_snr_{idx}_{suffix}")
     os.makedirs(OUT_DIR, exist_ok=True)
+    bias_B = selected_bias(args)
     df, label = load_catalogue(args)
-    print(f"{label}: {len(df)} halos", flush=True)
+    print(f"{label}: {len(df)} halos  profile={args.profile}  B={bias_B:g}", flush=True)
     st = load_beamed_table()
     t0 = time.time()
     if args.patch:
@@ -111,7 +133,7 @@ def main():
             df.y0_true.values, st, center_ra_deg=args.center_ra_deg,
             center_dec_deg=args.center_dec_deg, width_deg=args.width_deg,
             height_deg=args.height_deg, pixel_size_arcmin=args.pixel_size_arcmin,
-            nx=nx, ny=ny, progress=True)
+            nx=nx, ny=ny, progress=True, bias_B=bias_B)
         dt = time.time() - t0
         print(f"painted patch in {dt:.1f}s; shape={m.shape} "
               f"candidate_halos={meta['candidate_halos']} "
@@ -122,13 +144,16 @@ def main():
         return
     if args.cpu:
         m = paint_catalogue(df.z.values, df.M.values, df.lon.values,
-                            df.lat.values, df.y0_true.values, st, progress=True)
+                            df.lat.values, df.y0_true.values, st, progress=True,
+                            bias_B=bias_B)
     elif args.hybrid:
         m = paint_catalogue_gpu(df.z.values, df.M.values, df.lon.values,
-                                df.lat.values, df.y0_true.values, st, verbose=True)
+                                df.lat.values, df.y0_true.values, st, verbose=True,
+                                bias_B=bias_B)
     else:  # default: fully-GPU painter
         m = paint_catalogue_gpu_native(df.z.values, df.M.values, df.lon.values,
-                                       df.lat.values, df.y0_true.values, st)
+                                       df.lat.values, df.y0_true.values, st,
+                                       bias_B=bias_B)
     dt = time.time() - t0
     print(f"painted in {dt:.1f}s; nonzero={np.count_nonzero(m)} "
           f"max={m.max():.6e} sum={m.sum():.6f}", flush=True)
